@@ -8,3 +8,5 @@ _visualize_distribution.py
 _test_model.py
 png/sampled_sims
 png/distributions
+logs/*
+exports/*
