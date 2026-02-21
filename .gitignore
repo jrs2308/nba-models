@@ -9,4 +9,5 @@ _test_model.py
 png/sampled_sims
 png/distributions
 logs/*
+logs/model.log
 exports/*

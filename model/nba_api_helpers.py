@@ -9,7 +9,7 @@ from nba_api.stats.endpoints import (commonplayerinfo, leaguegamefinder,
 from nba_api.stats.static import players, teams
 from sklearn.ensemble import RandomForestClassifier
 
-def get_player_id(player_name) -> str or np.nan:
+def get_player_id(player_name) -> str:
 
     """
     Finds the player id for a given player name
@@ -25,22 +25,31 @@ def get_player_id(player_name) -> str or np.nan:
         idx_closest_match = np.argmax([SequenceMatcher(None, player_name, match['full_name']).ratio() for match in possible_matches])
         return str(possible_matches[idx_closest_match]['id'])
     else:
-        return np.nan
-    
-def get_player_team_id(player_id:str, res_wait: int = 0, timeout: int = 30) -> str:
+        return ""
+
+def get_player_team_id(player_id:str, res_wait: int = 0, timeout: int = 5) -> str:
 
     """
     Gets the team id for a given player id
     :param player_id: The player id to get the team id for
     :return: The team id
     """
-    if res_wait > 0:
-        time.sleep(res_wait)
-    if not type(player_id) == str:
-        raise TypeError('player_id must be a string')
-
-    player_info = commonplayerinfo.CommonPlayerInfo(player_id=player_id, timeout=timeout)
-    team_id = player_info.get_data_frames()[0]['TEAM_ID'][0]
+    max_tries = 5
+    for i in range(max_tries):
+        try:
+            if res_wait > 0:
+                time.sleep(res_wait)
+            if not type(player_id) == str:
+                raise TypeError('player_id must be a string')
+            player_info = commonplayerinfo.CommonPlayerInfo(player_id=player_id, timeout=timeout)
+            team_id = player_info.get_data_frames()[0]['TEAM_ID'][0]
+            if team_id is None:
+                raise Exception(f"Attempt {i+1} failed")
+            break
+        except Exception as e:
+            print(e)
+            if i == max_tries - 1:
+                raise
 
     return team_id
 
@@ -59,7 +68,7 @@ def get_player_shot_loc_data(player_name: str, team_id: str = None, context_meas
     """
     Gets the shot location data for a given player
     :param player_name: The name of the player to get the shot data for
-    :param season: The season to get the shot data for
+    :param season: The season to get the shot data for | season = year_to_season(most_recent_nba_season() - 1)
     :param team_id: The team id to get the shot data for
     :param context_measure_simple: Types of shots to get (eg. FGA, FG3A, etc.)
     :return: A pandas dataframe containing the shot data

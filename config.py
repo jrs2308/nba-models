@@ -1,5 +1,5 @@
 import os
-from datetime import date
+from datetime import date, timedelta
 
 from dotenv import load_dotenv
 
@@ -7,7 +7,11 @@ load_dotenv()
 
 DEBUG = int(os.getenv('DEBUG', 1))
 
+# today = date.today()
+# tomorrow_date = today + timedelta(days=1)
+
 STR_TODAY = date.today().strftime('%Y_%m_%d')
+# STR_TODAY = tomorrow_date.strftime('%Y_%m_%d')
 
 #Authentication with APIs
 ODDS_API_KEY = os.getenv('ODDS_API_KEY')

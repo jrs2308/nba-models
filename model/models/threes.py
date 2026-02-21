@@ -1,4 +1,5 @@
 import logging
+import time
 
 import numpy as np
 import pandas as pd
@@ -45,6 +46,7 @@ class ThreesModel:
         :return: numpy array of simulated shot results (1 = made, 0 = missed), length = n_simulated_games
         """
         try:
+            time.sleep(1)
             player_df = get_player_shot_loc_data(player_name, context_measure_simple='FG3A')
         except Exception:
             logging.error(f'Error getting player data for {player_name}. Could not find player in NBA API.')
@@ -104,21 +106,21 @@ class ThreesModel:
         })
 
         #shooting percentage by cluster
-        fg_percent_by_cluster = pd.DataFrame(cluster_df.groupby('cluster')['shot_made'].value_counts(normalize=True)).rename({'shot_made': 'fg_percent'}, axis=1).reset_index()
+        fg_percent_by_cluster = pd.DataFrame(cluster_df.groupby('cluster')['shot_made'].value_counts(normalize=True)).reset_index().rename({'proportion': 'fg_percent'}, axis=1, errors='raise')
         fg_percent_by_cluster = fg_percent_by_cluster.loc[fg_percent_by_cluster['shot_made'] == 1].drop('shot_made', axis=1)['fg_percent']
 
         #league fg% by cluster
-        league_fg_percent_by_cluster = pd.DataFrame(league_df.groupby('cluster')['SHOT_MADE_FLAG'].value_counts(normalize=True)).rename({'SHOT_MADE_FLAG': 'fg_percent'}, axis=1).reset_index()
+        league_fg_percent_by_cluster = pd.DataFrame(league_df.groupby('cluster')['SHOT_MADE_FLAG'].value_counts(normalize=True)).reset_index().rename({'proportion': 'fg_percent'}, axis=1, errors='raise')
         league_fg_percent_by_cluster = league_fg_percent_by_cluster.loc[league_fg_percent_by_cluster['SHOT_MADE_FLAG'] == 1].drop('SHOT_MADE_FLAG', axis=1)['fg_percent']
 
         #opponent def fg% by cluster
-        opponent_fg_percent_by_cluster = pd.DataFrame(opponent_df.groupby('cluster')['SHOT_MADE_FLAG'].value_counts(normalize=True)).rename({'SHOT_MADE_FLAG': 'fg_percent'}, axis=1).reset_index()
+        opponent_fg_percent_by_cluster = pd.DataFrame(opponent_df.groupby('cluster')['SHOT_MADE_FLAG'].value_counts(normalize=True)).reset_index().rename({'proportion': 'fg_percent'}, axis=1, errors='raise')
         opponent_fg_percent_by_cluster = opponent_fg_percent_by_cluster.loc[opponent_fg_percent_by_cluster['SHOT_MADE_FLAG'] == 1].drop('SHOT_MADE_FLAG', axis=1)['fg_percent']
         
         #opponent defensive ratings per cluster relative to league average
         def_fg_adjustment = opponent_fg_percent_by_cluster / league_fg_percent_by_cluster
 
-        #bootstrap resample from FGA data to find normal distribution fo estimated mean FGA per game
+        #bootstrap resample from FGA data to find normal distribution for estimated mean FGA per game
         fga_per_game_est = [np.random.choice(fga_per_game_data, size=len(fga_per_game_data), replace=True).mean() for _ in range(bootstrap_samples)]
         fga_per_game_est_mean = np.mean(fga_per_game_est)
         fga_per_game_est_std = np.std(fga_per_game_est)

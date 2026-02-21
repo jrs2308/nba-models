@@ -29,7 +29,6 @@ def calc_suggested_kelly(row:pd.Series) -> float:
 def calc_edge_for_over_under(row:pd.Series) -> float:
 
     """Calculate the edge for an over/under bet."""
-    
     if row['name'] == 'Over':
         return row['p(over)'] - row['implied_odds']
     else:

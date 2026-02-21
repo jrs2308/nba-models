@@ -1,10 +1,12 @@
 import logging
+import pytz
 
 import numpy as np
 import pandas as pd
 import requests
 from nba_api.stats.static import teams
 from tqdm import tqdm
+from datetime import datetime, timedelta
 
 from model.nba_api_helpers import get_player_id, get_player_team_id
 from model.odds_api.config import OddsAPIEndpoints, OddsAPISettings
@@ -32,8 +34,26 @@ class OddsAPI:
             :param mkt: The market to retrieve events for
             :return: A list of event ids
         """
-        
-        res = requests.get(OddsAPIEndpoints.RETRIEVE_ODDS_ENDPOINT.format(sport=sport_key, api_key=self.api_key, regions=region, markets=mkt))
+
+        # 1. Get tomorrow's date
+        # Start with today's date
+        today = datetime.now(pytz.utc).date()
+        # Calculate tomorrow's date
+        tomorrow_date = today + timedelta(days=1)
+
+        # 2. Set the time to 11:59
+        # Create a datetime object for tomorrow at 11:59 UTC
+        # datetime.combine merges a date object and a time object
+        time_at_1159 = datetime.combine(tomorrow_date, datetime.min.time()) + timedelta(hours=11, minutes=59)
+        # Add UTC timezone information to make the datetime object "aware"
+        aware_time_at_1159 = time_at_1159.replace(tzinfo=pytz.utc)
+
+        # 3. Format the datetime object to ISO 8601 format with 'Z'
+        # The .isoformat() method generates an ISO 8601 string, which can be modified
+        # to replace the standard UTC offset (+00:00) with 'Z'
+        formatted_date = aware_time_at_1159.isoformat().replace('+00:00', 'Z')
+
+        res = requests.get(OddsAPIEndpoints.RETRIEVE_ODDS_ENDPOINT.format(sport=sport_key, api_key=self.api_key, regions=region, markets=mkt, date=formatted_date))
         data = res.json()
       
         return [event['id'] for event in data]
@@ -91,31 +111,46 @@ class OddsAPI:
 
                 for book in data['bookmakers']:
                     for prop in book['markets'][0]['outcomes']:
+                        if prop['description'] == 'Carlton Carrington':
+                            player_name = prop['description'].replace("Carlton", "Bub")
+                        elif prop['description'] == 'Isaiah Stewart II':
+                            player_name = prop['description'].replace(" II", "")
+                        elif prop['description'] == 'Herb Jones':
+                            player_name = prop['description'].replace("Herb", "Herbert")
+                        elif prop['description'] in ["P.J. Washington"]:
+                            player_name = prop['description']
+                        else:
+                            player_name = prop['description'].replace(".", "")
+
+                        df_dict['player_name'].append(player_name)
                         df_dict['id'].append(event)
                         df_dict['prop_type'].append(market)
-                        df_dict['player_name'].append(prop['description'])
-                        
                         df_dict['sports_book'].append(book['key'])
                         df_dict['name'].append(prop['name'])
                         df_dict['price'].append(prop['price'])
                         df_dict['points'].append(prop.get('point'))
-                        
+                            
                         home_team = data['home_team']
                         away_team = data['away_team']
                         home_team = teams.find_teams_by_full_name(home_team)[0]['abbreviation']
                         away_team = teams.find_teams_by_full_name(away_team)[0]['abbreviation']
 
                         #nba api stuff
-                        nba_api_player_id = get_player_id(prop['description'])
+                        nba_api_player_id = get_player_id(player_name)
+                        # print(player_name + " " + str(nba_api_player_id))
                         df_dict['nba_api_player_id'].append(nba_api_player_id)
-                    
+                        
                         try:
-                            player_team_id = get_player_team_id(nba_api_player_id, timeout=30, res_wait=1)
+                            player_team_id = get_player_team_id(str(nba_api_player_id), timeout=8, res_wait=1)
                         except Exception as e:
                             logging.error(f'Error getting player team id for {prop["description"]}: {e}')
                             df_dict['player_team'].append(np.nan)
                             df_dict['defensive_matchup'].append(np.nan)
                             continue
+                        # print(player_name)
+                        # print(player_team_id)
+                        if player_name == "Brandon Williams":
+                            player_team_id = "1610612742"
                         player_team = teams.find_team_name_by_id(player_team_id)['abbreviation']
                         df_dict['player_team'].append(player_team)
 
@@ -144,8 +179,26 @@ class OddsAPI:
         :return: A pandas DataFrame
         """
 
+        # 1. Get tomorrow's date
+        # Start with today's date
+        today = datetime.now(pytz.utc).date()
+        # Calculate tomorrow's date
+        tomorrow_date = today + timedelta(days=1)
+
+        # 2. Set the time to 11:59
+        # Create a datetime object for tomorrow at 11:59 UTC
+        # datetime.combine merges a date object and a time object
+        time_at_1159 = datetime.combine(tomorrow_date, datetime.min.time()) + timedelta(hours=11, minutes=59)
+        # Add UTC timezone information to make the datetime object "aware"
+        aware_time_at_1159 = time_at_1159.replace(tzinfo=pytz.utc)
+
+        # 3. Format the datetime object to ISO 8601 format with 'Z'
+        # The .isoformat() method generates an ISO 8601 string, which can be modified
+        # to replace the standard UTC offset (+00:00) with 'Z'
+        formatted_date = aware_time_at_1159.isoformat().replace('+00:00', 'Z')
+
         res = requests.get(OddsAPIEndpoints.RETRIEVE_ODDS_ENDPOINT\
-            .format(sport=sport_key, api_key=self.api_key, regions=region, markets=mkt
+            .format(sport=sport_key, api_key=self.api_key, regions=region, markets=mkt, date=formatted_date
         ))
         
         data = res.json()

@@ -9,10 +9,10 @@ class OddsAPIEndpoints:
     ODDS_API_BASE_URL = "https://api.the-odds-api.com"
     ## event odds
     EVENT_ODDS_ENDPOINT = ODDS_API_BASE_URL + \
-        "/v4/sports/{sport}/events/{event_id}/odds?apiKey={api_key}&regions={regions}&markets={markets}&dateFormat={date_format}&oddsFormat={odds_format}"
+        "/v4/sports/{sport}/events/{event_id}/odds?apiKey={api_key}&regions={regions}&markets={markets}&dateFormat={date_format}&oddsFormat={odds_format}&bookmakers=draftkings,fanduel"
 
     RETRIEVE_ODDS_ENDPOINT = ODDS_API_BASE_URL + \
-        "/v4/sports/{sport}/odds/?apiKey={api_key}&regions={regions}&markets={markets}"
+        "/v4/sports/{sport}/odds/?apiKey={api_key}&regions={regions}&markets={markets}&commenceTimeTo={date}"
 
 class OddsAPIMarkets:
     h2h = 'h2h'
@@ -31,14 +31,7 @@ class OddsAPIMarkets:
     player_turnovers = 'player_turnovers'
 
     all_player_props = [
-        player_points, 
-        player_rebounds,
-        player_assists,
-        player_steals,
-        player_blocks,
-        player_threes,
-        player_double_double,
-        player_turnovers
+        player_threes
     ]
 
 class OddsAPIRegions:

@@ -1,5 +1,4 @@
-import logging
-import sys
+import logging.handlers
 
 from config import DEBUG, EXPORT_FOLDER, ODDS_API_KEY, LOGS_FOLDER
 from model import Model

@@ -1,7 +1,8 @@
 import logging
 import os
-
 import pandas as pd
+import datetime
+import pytz
 
 from config import STR_TODAY
 from model.models.threes import ThreesModel
@@ -99,6 +100,15 @@ class Model:
         threes_props['edge'] = threes_props.apply(calc_edge_for_over_under, axis=1)
         threes_props['ev'] = threes_props.apply(calc_expected_value, axis=1)
         threes_props['suggested_kelly'] = threes_props.apply(calc_suggested_kelly, axis=1)
+
+        threes_props = threes_props.loc[threes_props['edge'] > -0.03]
+        # print(threes_props.head(10))
+
         threes_props = threes_props.sort_values('ev', ascending=False)
 
-        threes_props.to_csv(self.export_folder + f'/sim_results/{STR_TODAY}.csv', index=False)
+        central_timezone = pytz.timezone('America/Chicago')
+        current_time_ct = datetime.datetime.now(central_timezone)
+        timestamp_str = current_time_ct.strftime("%Y-%m-%d_%H:%M")
+
+        # threes_props.to_csv(self.export_folder + f'/sim_results/{STR_TODAY}.csv', index=False)
+        threes_props.to_csv(self.export_folder + f'/sim_results/{timestamp_str}.csv', index=False)
